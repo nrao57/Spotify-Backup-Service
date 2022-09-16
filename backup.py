@@ -12,8 +12,8 @@ def get_access_token():
 
     payload='grant_type=client_credentials'
     headers = {
-    'Authorization': 'Basic ' + base64_encode(os.environ['SPOTIFY_CLIENT_ID'], os.environ['SPOTIFY_CLIENT_SECRET']),
-    'Content-Type': 'application/x-www-form-urlencoded'
+        'Authorization': 'Basic ' + base64_encode(os.environ['SPOTIFY_CLIENT_ID'], os.environ['SPOTIFY_CLIENT_SECRET']),
+        'Content-Type': 'application/x-www-form-urlencoded'
     }
 
     response = requests.request("POST", url, headers=headers, data=payload)
@@ -21,14 +21,16 @@ def get_access_token():
 
 def get_access_token_headers(access_token):
     return {
-    'Content-Type': 'application/json',
-    'Authorization': 'Bearer ' + access_token
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + access_token
     }
+
 
 def get_user_playlist(access_token_headers):
     url = f"https://api.spotify.com/v1/users/{os.environ['USER_ID']}/playlists"
     response = requests.request("GET", url, headers=access_token_headers, data="")
     return response.json()
+
 
 def get_playlist_data(access_token_headers, playlist_id, next=None):
     if next:
