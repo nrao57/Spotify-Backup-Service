@@ -2,6 +2,7 @@ import requests
 import json
 import os
 import base64
+import datetime
 
 
 def base64_encode(client_id, client_secret):
@@ -65,5 +66,6 @@ for playlist in playlists_data['items']:
         all_data[playlist['name']] = playlist_tracks
         if not next:
             break
-    
-write_data_to_file("playlist_backup.json", all_data)
+
+today_date = str(datetime.date.today())
+write_data_to_file(f"playlist_backup_{today_date}.json", all_data)
