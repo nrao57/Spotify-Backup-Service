@@ -3,6 +3,7 @@ import json
 import os
 import base64
 import datetime
+import sqlite3
 
 
 def base64_encode(client_id, client_secret):
@@ -54,7 +55,26 @@ def write_data_to_file(filename, data_dict):
      json.dump(data_dict, f)
 
 
-all_data = {}
+def create_table(conn):
+    conn.execute('''CREATE TABLE IF NOT EXISTS TRACK
+         (id integer primary key autoincrement,
+         album_name           TEXT    NOT NULL,
+         track_name           TEXT    NOT NULL,
+         playlist_name        TEXT NOT NULL);''')
+    return
+
+
+def load_data(tracks):
+    conn = sqlite3.connect('spotify_backup.db')
+    cur = conn.cursor()
+    create_table(conn)
+    for track in tracks:
+        cur.execute(f"INSERT INTO TRACK (album_name,track_name,playlist_name) VALUES (?, ?, ?)", (track["album_name"], track["track_name"], track["playlist_name"]))
+        conn.commit()
+    conn.close()
+
+
+tracks = []
 # loop through all playlists and get the tracks
 token_header = get_access_token_headers(get_access_token())
 playlists_data = get_user_playlist(access_token_headers=get_access_token_headers(token_header))
@@ -63,9 +83,17 @@ for playlist in playlists_data['items']:
     next = None
     while(True):
         playlist_tracks, next = get_playlist_data( get_access_token_headers(token_header), playlist['id'], next)
-        all_data[playlist['name']] = playlist_tracks
+        for playlist_track in playlist_tracks:
+            tracks.append(
+                {
+                    "playlist_name": playlist['name'], 
+                    "album_name": playlist_track['track']['album']['name'], 
+                    "track_name": playlist_track['track']['name']
+                }
+            )
         if not next:
             break
 
 today_date = str(datetime.date.today())
-write_data_to_file(f"playlist_backup_{today_date}.json", all_data)
+# write_data_to_file(f"playlist_backup_{today_date}.json", all_data)
+load_data(tracks)
