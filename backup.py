@@ -37,7 +37,8 @@ def get_playlist_data(access_token_headers, playlist_id, next=None):
     if next:
         url = next
     else:
-        url = f"https://api.spotify.com/v1/playlists/{playlist_id}?fields=tracks.items(track(name,album(name),id,artists(name))),tracks.next"
+        field_filter = "?fields=tracks.items(track(name,album(name),id,artists(name),uri)),tracks.next"
+        url = f"https://api.spotify.com/v1/playlists/{playlist_id}" + field_filter
     
     response = requests.request("GET", url, headers=access_token_headers, data={})
     data = response.json()
@@ -60,16 +61,27 @@ def create_table(conn):
          (id integer primary key autoincrement,
          album_name           TEXT    NOT NULL,
          track_name           TEXT    NOT NULL,
-         playlist_name        TEXT NOT NULL);''')
+         playlist_name        TEXT NOT NULL,
+         spotify_id           TEXT,
+         spotify_uri          TEXT);''')
     return
 
 
-def load_data(tracks):
-    conn = sqlite3.connect('spotify_backup.db')
+def load_data(tracks, today_date):
+    conn = sqlite3.connect(f'spotify_backup_{today_date}.db')
     cur = conn.cursor()
     create_table(conn)
     for track in tracks:
-        cur.execute(f"INSERT INTO TRACK (album_name,track_name,playlist_name) VALUES (?, ?, ?)", (track["album_name"], track["track_name"], track["playlist_name"]))
+        cur.execute(
+            f"INSERT INTO TRACK (album_name,track_name,playlist_name,spotify_id,spotify_uri) VALUES (?, ?, ?, ?, ?)", 
+            (
+                track["album_name"], 
+                track["track_name"], 
+                track["playlist_name"], 
+                track["spotify_id"],
+                track["spotify_uri"]
+            )
+        )
         conn.commit()
     conn.close()
 
@@ -88,7 +100,9 @@ for playlist in playlists_data['items']:
                 {
                     "playlist_name": playlist['name'], 
                     "album_name": playlist_track['track']['album']['name'], 
-                    "track_name": playlist_track['track']['name']
+                    "track_name": playlist_track['track']['name'],
+                    "spotify_id": playlist_track['track']['id'],
+                    "spotify_uri": playlist_track['track']['uri']
                 }
             )
         if not next:
@@ -96,4 +110,4 @@ for playlist in playlists_data['items']:
 
 today_date = str(datetime.date.today())
 # write_data_to_file(f"playlist_backup_{today_date}.json", all_data)
-load_data(tracks)
+load_data(tracks, today_date)
